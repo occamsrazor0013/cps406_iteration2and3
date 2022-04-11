@@ -10,11 +10,13 @@ function Register() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [name, setName] = useState("");
+    const [phone, setPhone] = useState("");
+    const [address, setAddress] = useState("");
     const [user, loading, error] = useAuthState(auth);
     const navigate = useNavigate();
     const register = () => {
         if (!name) alert("Please enter name");
-        registerWithEmailAndPassword(name, email, password);
+        registerWithEmailAndPassword(name, email, password, phone, address);
     };
     useEffect(() => {
         if (loading) return;
@@ -36,6 +38,20 @@ function Register() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="E-mail Address"
+                />
+                <input
+                type="text"
+                className="register__textBox"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Phone"
+                />
+                <input
+                type="text"
+                className="register__textBox"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="Address"
                 />
                 <input
                 type="password"
