@@ -3,6 +3,17 @@ import { useAuthState } from "react-firebase-hooks/auth";
 import { useNavigate } from "react-router-dom";
 import { auth, db, logout } from "./firebase";
 import { query, collection, getDocs, where } from "firebase/firestore";
+import DatePicker from "react-datepicker";
+import 'react-datepicker/dist/react-datepicker.css';
+import {
+    Input,
+    Box,
+    Button,
+    Center,
+    HStack
+  } from '@chakra-ui/react'
+import "./styles.css";
+
 function Dashboard() {
     const [user, loading, error] = useAuthState(auth);
     const [name, setName] = useState("");
@@ -23,20 +34,26 @@ function Dashboard() {
         if (!user) return navigate("/");
         fetchUserName();
     }, [user, loading]);
+    const [startDate, setStartDate] = useState(new Date());
     return (
-        <div className="dashboard">
-        <div className="dashboard__container">
+        <Box>
             Logged in as
             <div>{name}</div>
             <div>{user?.email}</div>
-            <input
-                type="number"
-            />
-            <button className="dashboard__btn" onClick={logout}>
-            Logout
-            </button>
-        </div>
-        </div>
+            <Center>
+                <HStack spacing="24px">
+                        <Box>
+                            <DatePicker selected={startDate} onChange={(date) => setStartDate(date)} />
+                        </Box>
+                        <Button>
+                            Add
+                        </Button>
+                </HStack>
+            </Center>
+            <Button onClick={logout}>
+                Logout
+            </Button>
+        </Box>
     );
 }
 export default Dashboard;
