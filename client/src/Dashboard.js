@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useNavigate } from "react-router-dom";
@@ -63,6 +62,8 @@ function Dashboard() {
             alert(err.message);
         }
     };
+
+    console.log(notPaid[0].seconds);
 
     return (
         <Box>

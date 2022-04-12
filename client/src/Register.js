@@ -42,7 +42,7 @@ function Register() {
     };
     useEffect(() => {
         if (loading) return;
-        if (user) navigate.replace("/dashboard");
+        if (user) navigate("/dashboard");
     }, [user, loading]);
     return (
         <Container
