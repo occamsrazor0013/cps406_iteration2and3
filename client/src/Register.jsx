@@ -77,7 +77,7 @@ function Register() {
                     <FormLabel htmlFor='name'>Name</FormLabel>
                     <Input
                         id='name'
-                        type='name'
+                        type='text'
                         value={name}
                         onChange={e => setName(e.target.value)}
                         placeholder='Full Name'
@@ -85,7 +85,7 @@ function Register() {
                     <FormLabel htmlFor='email'>Email</FormLabel>
                     <Input
                         id='email'
-                        type='email'
+                        type='text'
                         value={email}
                         onChange={e => setEmail(e.target.value)}
                         placeholder='E-mail Address'
@@ -93,7 +93,7 @@ function Register() {
                     <FormLabel htmlFor='email'>Phone Number</FormLabel>
                     <Input
                         id='phone'
-                        type='phone'
+                        type='text'
                         value={phone}
                         onChange={e => setPhone(e.target.value)}
                         placeholder='Phone'
@@ -101,7 +101,7 @@ function Register() {
                     <FormLabel htmlFor='address'>Address</FormLabel>
                     <Input
                         id='address'
-                        type='address'
+                        type='text'
                         value={address}
                         onChange={e => setAddress(e.target.value)}
                         placeholder='Address'
