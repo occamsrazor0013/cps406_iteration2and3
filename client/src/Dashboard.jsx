@@ -2,9 +2,19 @@ import React, { useEffect, useState } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useNavigate } from "react-router-dom";
 import { auth, db, logout } from "./firebase";
-import { query, collection, getDocs, where, updateDoc, arrayUnion, doc, onSnapshot, getDoc } from "firebase/firestore";
+import { query, 
+        collection, 
+        getDocs, 
+        where, 
+        updateDoc, 
+        arrayUnion, 
+        doc, 
+        orderBy, 
+        deleteField,
+        onSnapshot, 
+        getDoc } from "firebase/firestore";
 import DatePicker from "react-datepicker";
-import { BellIcon, ChatIcon, CheckIcon } from '@chakra-ui/icons'
+import { BellIcon, ChatIcon, CheckIcon, DeleteIcon } from '@chakra-ui/icons'
 import 'react-datepicker/dist/react-datepicker.css';
 import {
     Input,
@@ -27,6 +37,7 @@ function Dashboard() {
     const [startDate, setStartDate] = useState(new Date());
     const [name, setName] = useState("");
     const [level, setLevel] = useState("");
+    const [paid, setPaid] = useState([]);
     const [notPaid, setNotPaid] = useState([]);
     const [members, setMembers] = useState([]);
     const [messages, setMessages] = useState("");
@@ -50,15 +61,15 @@ function Dashboard() {
 
     const fetchMembers = async () => {
         try {
-        const q = query(collection(db, "users"), where("level", "==", "member"));
+        const q = query(collection(db, "users"), where("level", "==", "member"), orderBy("unpaid", "asc"));
         const doc = await getDocs(q);
         const names = [];
         doc.forEach((doc) => {
             if (doc.data().unpaid.length != 0){
-                names.push("NOT PAID - " + doc.data().name);
+                names.push({name:  doc.data().name, boolean: true});
             }
             else {
-                names.push(doc.data().name);
+                names.push({name: doc.data().name, boolean: false});
             }
         })
         setMembers(names);
@@ -69,7 +80,8 @@ function Dashboard() {
     };
 
     const sendMessage = async (member, message) => {
-        const q = query(collection(db, "users"), where ("name", "==", member), where ("level", "==", "member"));
+        console.log(member);
+        const q = query(collection(db, "users"), where("name", "==", member),where ("level", "==", "member"));
         const userDoc = await getDocs(q);
         const uid = userDoc.docs[0].data().uid;
         await updateDoc(doc(db, "users", uid), {
@@ -78,12 +90,25 @@ function Dashboard() {
     }
 
     const sendReminder = async (member) => {
-        const q = query(collection(db, "users"), where ("name", "==", member));
+        const q = query(collection(db, "users"), where("name", "==", member),where ("level", "==", "member"));
         const userDoc = await getDocs(q);
-        const uid = userDoc.data().uid;
+        const uid = userDoc.docs[0].data().uid;
         await updateDoc(doc(db, "users", uid), {
             reminder: true
         })
+    }
+
+    const removeMember = async (member) => {
+        const q = query(collection(db, "users"), where("name", "==", member),where ("level", "==", "member"));
+        const userDoc = await getDocs(q);
+        const uid = userDoc.docs[0].data().uid;
+        await updateDoc(doc(db, "users", uid), {
+            unpaid: deleteField(),
+            paid: deleteField(),
+            messages: "You have been removed from all classes",
+            unpaid: [],
+            paid: [],
+        });
     }
 
     useEffect(() => {
@@ -180,27 +205,40 @@ function Dashboard() {
         )
     }
     function TreasurerDashboard(){
-        return(
-            <Box />
-        )
-    }
-
-
-    function CoachDashboard(){
+        const [sort, setSort] = useState(true);
         const [member, setMember] = useState("");
         const [message, setMessage] = useState("");
 
         return(
             <Center>
                 <VStack spacing={5}>
+                    <Box>Logged in as: {name}</Box>
+                    <Button onClick={() => setSort(!sort)}>
+                        Sort
+                    </Button>
                     <Box>
-                        Members
-                        <OrderedList>
-                        {members.map( member => 
-                            <ListItem key={member}>
-                                {member}
-                            </ListItem>)}
-                        </OrderedList>
+                        {sort ?
+                        <Box>
+                            Sorted by Least Paid Members
+                            <Center>Members</Center>
+                            <OrderedList>
+                            {members.slice().reverse().map( member => 
+                                <ListItem key={member.name}>
+                                    {member.name}
+                                </ListItem>)}
+                            </OrderedList>
+                        </Box> : 
+                        <Box>
+                            Sorted by Most Paid Members
+                            <Center>Members</Center>
+                            <OrderedList>
+                            {members.map( member => 
+                                <ListItem key={member.name}>
+                                    {member.name}
+                                </ListItem>)}
+                            </OrderedList>
+                        </Box>
+                        }
                     </Box>
 
                         <HStack spacing={3}>
@@ -209,8 +247,8 @@ function Dashboard() {
                                     value={member}
                                     onChange={e => setMember(e.target.value)}>
                                 {members.map( member => 
-                                <option key={member} value={member}>
-                                    {member.slice(11)}
+                                <option key={member.name} value={member.name}>
+                                    {member.name}
                                 </option>)}
                                 </Select>
                                 <FormControl>
@@ -224,10 +262,68 @@ function Dashboard() {
                                         />
                                     </FormLabel>
                                 </FormControl>
-                            <Button onClick={() => sendMessage(member.slice(11), message)}>
+                            <Button onClick={() => sendMessage(member, message)}>
                                 <ChatIcon />
                             </Button>
-                            <Button onClick={() => sendReminder(member.slice(11))}>
+                            <Button onClick={() => sendReminder(member)}>
+                                <BellIcon/>
+                            </Button>
+                            <Button onClick={() => removeMember(member)}>
+                                <DeleteIcon/>
+                            </Button>
+                        </HStack>
+                <Button onClick={logout}>
+                    Logout
+                </Button>
+                </VStack>
+            </Center>
+        )
+    }
+
+
+    function CoachDashboard(){
+        const [member, setMember] = useState("");
+        const [message, setMessage] = useState("");
+
+        return(
+            <Center>
+                <VStack spacing={5}>
+                    <Box>Logged in as: {name}</Box>
+                    <Box>
+                        Members
+                        <OrderedList>
+                        {members.map( member => 
+                            <ListItem key={member.name}>
+                                {member.name}
+                            </ListItem>)}
+                        </OrderedList>
+                    </Box>
+
+                        <HStack spacing={3}>
+                                <Select 
+                                    placeholder="Select member"
+                                    value={member}
+                                    onChange={e => setMember(e.target.value)}>
+                                {members.map( member => 
+                                <option key={member.name} value={member.name}>
+                                    {member.name}
+                                </option>)}
+                                </Select>
+                                <FormControl>
+                                    <FormLabel>
+                                        <Input 
+                                            id='message'
+                                            type='text'
+                                            value={message}
+                                            onChange={e => setMessage(e.target.value)}
+                                            placeholder='Message'
+                                        />
+                                    </FormLabel>
+                                </FormControl>
+                            <Button onClick={() => sendMessage(member, message)}>
+                                <ChatIcon />
+                            </Button>
+                            <Button onClick={() => sendReminder(member)}>
                                 <BellIcon/>
                             </Button>
                         </HStack>
