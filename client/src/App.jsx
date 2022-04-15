@@ -4,6 +4,8 @@ import Login from "./Login";
 import Register from "./Register";
 import Reset from "./Reset";
 import Dashboard from "./Dashboard";
+import StripeApp from "./StripeApp";
+import CheckoutForm from "./CheckoutForm";
 function App() {
   return (
     <ChakraProvider>
@@ -14,6 +16,8 @@ function App() {
             <Route exact path="/register" element={<Register />} />
             <Route exact path="/reset" element={<Reset />} />
             <Route exact path="/dashboard" element={<Dashboard />} />
+            <Route exact path="/stripeapp" element={<StripeApp />} />
+            <Route exact path="/checkoutform" element={<CheckoutForm />} />
           </Routes>
         </Router>
       </div>
