@@ -17,7 +17,12 @@ import {
   getDoc
 } from 'firebase/firestore'
 import DatePicker from 'react-datepicker'
-import { BellIcon, ChatIcon, CheckIcon, ChevronRightIcon, DeleteIcon } from '@chakra-ui/icons'
+import { 
+  BellIcon, 
+  ChatIcon, 
+  CheckIcon, 
+  DeleteIcon,
+} from '@chakra-ui/icons'
 import 'react-datepicker/dist/react-datepicker.css'
 import {
   Input,
@@ -38,8 +43,13 @@ import {
   ListIcon,
   useColorModeValue,
   Divider,
-  Container,
-  Grid
+  Grid,
+  Spacer, 
+  InputGroup, 
+  InputLeftElement,
+  InputRightElement,
+  Flex,
+
 } from '@chakra-ui/react'
 import './styles.css'
 
@@ -61,6 +71,7 @@ export default function Dashboard () {
       const data = doc.docs[0].data()
       setName(data.name)
       setLevel(data.level)
+      setPaid(data.paid)
       setUnpaid(data.unpaid)
       setMessages(data.messages)
       setReminder(data.reminder)
@@ -163,7 +174,7 @@ export default function Dashboard () {
 
     const moveToPaid = async (session) => {
       await updateDoc(doc(db, 'users', user.uid), {
-        unpaid: arrayUnion(session),
+        unpaid: arrayRemove(session),
         paid: arrayUnion(session)
       })
     }
@@ -183,6 +194,12 @@ export default function Dashboard () {
       window.location.reload()
     }
 
+    const moveToAttended = async (session) => {
+      await updateDoc(doc(db, 'users', user.uid), {
+        paid: arrayRemove(session),
+        attended: arrayUnion(session)
+      })
+    }
 
     return (
         <>
@@ -220,10 +237,14 @@ export default function Dashboard () {
                     {unpaid.map(session => (
                         <ListItem key={session.seconds} py={2} fontWeight='normal'>
                             <ToDate unixTime={session.seconds} />
-                            <StackDivider></StackDivider>
+                            <StackDivider />
                             <Button
                                 mt={1}
-                                onClick={openPayment} 
+                                onClick={() => {
+                                  openPayment();
+                                  var s = new Date(session.seconds*1000);
+                                  moveToPaid(s);
+                                  }} 
                                 fontSize="sm"
                                 w={'min'}
                                 bg={'gray.600'}
@@ -237,6 +258,28 @@ export default function Dashboard () {
                                 }}>
                                 Pay Session
                             </Button>
+                        </ListItem>
+                    ))}
+                    </OrderedList>
+                </Box>
+
+                <Box bg={useColorModeValue('gray.50', 'gray.900')} px={0} py={3}>
+                    <Text fontSize={'2xl'} fontWeight="medium"
+                    >Paid Sessions </Text>
+                    <Divider h={3} maxW="fit-content" ></Divider>
+                    <OrderedList spacing={3} px={2} fontSize="sm">
+                    {paid.map(session => (
+                        <ListItem key={session.seconds} py={2} fontWeight='normal'>
+                          <HStack>
+                            <ToDate unixTime={session.seconds} />
+                            <StackDivider />
+                            <Button onClick={() => {
+                              var s = new Date(session.seconds*1000);
+                              moveToAttended(s);
+                            }}>
+                              <CheckIcon />
+                            </Button>
+                          </HStack>
                         </ListItem>
                     ))}
                     </OrderedList>
@@ -311,14 +354,25 @@ export default function Dashboard () {
 
     return (
       <Center>
-        <VStack spacing={5}>
-          <Box>Logged in as: {name}</Box>
+        <VStack spacing={8}>
+          <Stack
+            textAlign={'left'}
+            color={useColorModeValue('gray.800', 'white')}
+            align={'left'}>
+            <Stack direction={'row'} align={'left'} justify={'left'}>
+            <Text fontSize={'5xl'}>Hello, {" "} </Text>
+            <Text fontSize={'5xl'} fontWeight={700}>
+            
+            {name}
+            </Text>
+            </Stack>
+          </Stack>
           <Button onClick={() => setSort(!sort)}>Sort</Button>
           <Box>
             {sort ? (
-              <Box>
-                Sorted by Most Paid Members
-                <Center>Members</Center>
+              <VStack spacing={4}>
+                <Text fontSize='2xl'>Sorted by Most Paid </Text>
+                <Text fontSize='xl'>Members </Text>
                 <OrderedList>
                   {members
                     .slice()
@@ -327,17 +381,17 @@ export default function Dashboard () {
                       <ListItem key={member.name}>{member.name}</ListItem>
                     ))}
                 </OrderedList>
-              </Box>
+              </VStack>
             ) : (
-              <Box>
-                Sorted by Least Paid Members
+              <VStack>
+                <Text fontSize={'xl'} fontWeight="medium">Sorted by Least Paid </Text>
                 <Center>Members</Center>
                 <OrderedList>
                   {members.map(member => (
                     <ListItem key={member.name}>{member.name}</ListItem>
                   ))}
                 </OrderedList>
-              </Box>
+              </VStack>
             )}
           </Box>
 
@@ -374,6 +428,55 @@ export default function Dashboard () {
               <DeleteIcon />
             </Button>
           </HStack>
+          
+          <Box>
+            <VStack spacing={5}>
+            <Text fontSize='2xl'>Club Finances</Text>
+              <Flex w="120%">
+                  <Box>Total Revenue: </Box>
+                  <Spacer />
+                  <Box>To be done </Box>
+              </Flex>
+              <Flex w="120%">
+                  <Box>Additional Revenue: </Box>
+                  <Spacer />
+                  <InputGroup width='auto'>
+                    <InputLeftElement
+                      pointerEvents='none'
+                      color='gray.300'
+                      fontSize='1.2em'
+                      children='$'
+                    />
+                    <Input placeholder='Enter amount' htmlSize={9} width='auto'/>
+                    <InputRightElement children={<CheckIcon color='green.500' />} />
+                  </InputGroup>
+              </Flex>
+              <Flex w="120%">
+                  <Box>Current debts: </Box>
+                  <Spacer />
+                  <Box>To be done </Box>
+              </Flex>
+              <Flex w="120%">
+                  <Box>Additional expenses: </Box>
+                  <Spacer />
+                  <InputGroup width='auto'>
+                    <InputLeftElement
+                      pointerEvents='none'
+                      color='gray.300'
+                      fontSize='1em'
+                      children='$'
+                    />
+                  <Input placeholder='Enter amount' htmlSize={9} width='auto'/>
+                  <InputRightElement children={<CheckIcon color='green.500' />} />
+                  </InputGroup>
+              </Flex>
+              <Flex w="120%">
+                  <Box>Total Profit: </Box>
+                  <Spacer />
+                  <Box>To be done </Box>
+              </Flex>
+            </VStack>
+          </Box>
           <Button onClick={logout}>Logout</Button>
         </VStack>
       </Center>
@@ -381,20 +484,51 @@ export default function Dashboard () {
   }
 
   function CoachDashboard () {
+    const [sort, setSort] = useState(true)
     const [member, setMember] = useState('')
     const [message, setMessage] = useState('')
 
     return (
       <Center>
-        <VStack spacing={5}>
-          <Box>Logged in as: {name}</Box>
+        <VStack spacing={8}>
+          <Stack
+            textAlign={'left'}
+            color={useColorModeValue('gray.800', 'white')}
+            align={'left'}>
+            <Stack direction={'row'} align={'left'} justify={'left'}>
+            <Text fontSize={'5xl'}>Hello, {" "} </Text>
+            <Text fontSize={'5xl'} fontWeight={700}>
+            
+            {name}
+            </Text>
+            </Stack>
+          </Stack>
+          <Button onClick={() => setSort(!sort)}>Sort</Button>
           <Box>
-            Members
-            <OrderedList>
-              {members.map(member => (
-                <ListItem key={member.name}>{member.name}</ListItem>
-              ))}
-            </OrderedList>
+            {sort ? (
+              <VStack spacing={4}>
+                <Text fontSize='2xl'>Sorted by Most Paid </Text>
+                <Text fontSize='xl'>Members </Text>
+                <OrderedList>
+                  {members
+                    .slice()
+                    .reverse()
+                    .map(member => (
+                      <ListItem key={member.name}>{member.name}</ListItem>
+                    ))}
+                </OrderedList>
+              </VStack>
+            ) : (
+              <VStack>
+                <Text fontSize={'xl'} fontWeight="medium">Sorted by Least Paid </Text>
+                <Center>Members</Center>
+                <OrderedList>
+                  {members.map(member => (
+                    <ListItem key={member.name}>{member.name}</ListItem>
+                  ))}
+                </OrderedList>
+              </VStack>
+            )}
           </Box>
 
           <HStack spacing={3}>
@@ -426,7 +560,59 @@ export default function Dashboard () {
             <Button onClick={() => sendReminder(member)}>
               <BellIcon />
             </Button>
+            <Button onClick={() => removeMember(member)}>
+              <DeleteIcon />
+            </Button>
           </HStack>
+          
+          <Box>
+            <VStack spacing={5}>
+            <Text fontSize='2xl'>Club Finances</Text>
+              <Flex w="120%">
+                  <Box>Total Revenue: </Box>
+                  <Spacer />
+                  <Box>To be done </Box>
+              </Flex>
+              <Flex w="120%">
+                  <Box>Additional Revenue: </Box>
+                  <Spacer />
+                  <InputGroup width='auto'>
+                    <InputLeftElement
+                      pointerEvents='none'
+                      color='gray.300'
+                      fontSize='1.2em'
+                      children='$'
+                    />
+                    <Input placeholder='Enter amount' htmlSize={9} width='auto'/>
+                    <InputRightElement children={<CheckIcon color='green.500' />} />
+                  </InputGroup>
+              </Flex>
+              <Flex w="120%">
+                  <Box>Current debts: </Box>
+                  <Spacer />
+                  <Box>To be done </Box>
+              </Flex>
+              <Flex w="120%">
+                  <Box>Additional expenses: </Box>
+                  <Spacer />
+                  <InputGroup width='auto'>
+                    <InputLeftElement
+                      pointerEvents='none'
+                      color='gray.300'
+                      fontSize='1em'
+                      children='$'
+                    />
+                  <Input placeholder='Enter amount' htmlSize={9} width='auto'/>
+                  <InputRightElement children={<CheckIcon color='green.500' />} />
+                  </InputGroup>
+              </Flex>
+              <Flex w="120%">
+                  <Box>Total Profit: </Box>
+                  <Spacer />
+                  <Box>To be done </Box>
+              </Flex>
+            </VStack>
+          </Box>
           <Button onClick={logout}>Logout</Button>
         </VStack>
       </Center>
