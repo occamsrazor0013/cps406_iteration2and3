@@ -81,6 +81,7 @@ function Register() {
                         value={name}
                         onChange={e => setName(e.target.value)}
                         placeholder='Full Name'
+                        isRequired="true"
                     />
                     <FormLabel htmlFor='email'>Email</FormLabel>
                     <Input
@@ -89,6 +90,7 @@ function Register() {
                         value={email}
                         onChange={e => setEmail(e.target.value)}
                         placeholder='E-mail Address'
+                        isRequired="true"
                     />
                     <FormLabel htmlFor='email'>Phone Number</FormLabel>
                     <Input
@@ -97,6 +99,7 @@ function Register() {
                         value={phone}
                         onChange={e => setPhone(e.target.value)}
                         placeholder='Phone'
+                        isRequired="true"
                     />
                     <FormLabel htmlFor='address'>Address</FormLabel>
                     <Input
@@ -105,6 +108,7 @@ function Register() {
                         value={address}
                         onChange={e => setAddress(e.target.value)}
                         placeholder='Address'
+                        isRequired="true"
                     />
                     <FormLabel htmlFor='password'>Password</FormLabel>
                     <Input
@@ -113,6 +117,7 @@ function Register() {
                         value={password}
                         onChange={e => setPassword(e.target.value)}
                         placeholder='Password'
+                        isRequired="true"
                     />
                     </FormControl>
                     <Center>
