@@ -104,7 +104,7 @@ export default function Dashboard () {
       const memberDoc = await getDocs(q);
       const coachDoc = await getDocs(c);
       memberDoc.forEach(doc => {
-        if (doc.data().paid.length !== 0 || doc.data().attended.length) {
+        if (doc.data().paid.length !== 0 || doc.data().attended.length !== 0) {
           names.push({ 
             name: doc.data().name, 
             revenue: doc.data().paid.length+doc.data().attended.length,
