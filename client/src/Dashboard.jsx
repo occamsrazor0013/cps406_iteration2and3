@@ -399,23 +399,14 @@ export default function Dashboard () {
     return (
       <Box >
         <VStack spacing={8}>
-          <Stack
-            textAlign={'left'}
-            color={useColorModeValue('gray.800', 'white')}
-            align={'left'}>
-            <Stack direction={'row'} align={'left'} justify={'left'}>
-            <Text fontSize={'5xl'}>Hello, {" "} </Text>
-            <Text fontSize={'5xl'} fontWeight={700}>
-              {name} ({level})
-            </Text>
-            </Stack>
-          </Stack>
-          <Button onClick={() => setSort(!sort)}>Sort</Button>
           <Box>
+            <Text pt="40%" fontSize={'5xl'}>Hello, {name} ({level}) </Text>
+            <Center>
+              <Button onClick={() => setSort(!sort)}>Sort</Button>
+            </Center>
             {sort ? (
               <VStack spacing={4}>
-                <Text fontSize={'xl'} fontWeight="medium">Sorted by Most Paid </Text>
-                <Center>Members</Center>
+                <Text fontSize={'xl'} fontWeight="medium">Sorted by Most Paid Members</Text>
                 <OrderedList>
                   {members
                     .slice()
@@ -428,8 +419,7 @@ export default function Dashboard () {
               </VStack>
             ) : (
               <VStack spacing={4}>
-                <Text fontSize={'xl'} fontWeight="medium">Sorted by Least Paid </Text>
-                <Center>Members</Center>
+                <Text fontSize={'xl'} fontWeight="medium">Sorted by Least Paid Members</Text>
                 <OrderedList>
                   {members.sort((a, b) => (a.revenue > b.revenue) ? 1 : -1).map(member => (
                     <ListItem key={member.name}>{member.name}</ListItem>
