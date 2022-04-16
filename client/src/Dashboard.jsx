@@ -216,7 +216,7 @@ export default function Dashboard () {
   const addSession = async () => {
     try {
       await updateDoc(doc(db, 'users', user.uid), {
-        paid: arrayUnion(startDate)
+        unpaid: arrayUnion(startDate)
       })
     } catch (err) {
       alert(err.message)
