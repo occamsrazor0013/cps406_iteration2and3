@@ -22,6 +22,8 @@ import {
   ChatIcon, 
   CheckIcon, 
   DeleteIcon,
+  EditIcon,
+  RepeatClockIcon
 } from '@chakra-ui/icons'
 import 'react-datepicker/dist/react-datepicker.css'
 import {
@@ -63,7 +65,11 @@ export default function Dashboard () {
   const [members, setMembers] = useState([])
   const [messages, setMessages] = useState('')
   const [reminder, setReminder] = useState(false)
+  const [revenue, setRevenue]= useState(0)
+  const [coachUnpaid, setCoachUnpaid] = useState(0)
+  const [coachMonthlyUnpaid, setCoachMonthlyUnpaid] = useState([]);
   const navigate = useNavigate()
+
   const fetchUserName = async () => {
     try {
       const q = query(collection(db, 'users'), where('uid', '==', user.uid))
@@ -83,28 +89,52 @@ export default function Dashboard () {
 
   const fetchMembers = async () => {
     try {
+      var r = 0;
+      var u = 0;
+      let names = [];
+      let monthly = [];
       const q = query(
         collection(db, 'users'),
         where('level', '==', 'member'),
-        orderBy('unpaid', 'asc')
-      )
-      const doc = await getDocs(q)
-      const names = []
-      doc.forEach(doc => {
+      );
+      const c = query(
+        collection(db, 'users'),
+        where('level', '==', 'coach'),
+      );
+      const memberDoc = await getDocs(q);
+      const coachDoc = await getDocs(c);
+      memberDoc.forEach(doc => {
         if (doc.data().paid.length !== 0) {
-          names.push({ name: doc.data().name, boolean: true })
-        } else {
-          names.push({ name: doc.data().name, boolean: false })
+          names.push({ 
+            name: doc.data().name, 
+            revenue: doc.data().paid.length+doc.data().attended.length,
+            attended: doc.data().attended,
+            paid: doc.data().paid,
+            unpaid: doc.data().unpaid,
+            attendance: doc.data().attended.length, 
+            phone: doc.data().phone,
+            address: doc.data().address
+          });
+          r += doc.data().paid.length;
         }
       })
-      setMembers(names)
+      coachDoc.forEach(doc => {
+        for (const v in doc.data().unpaid){
+          u += (doc.data().unpaid[v])
+          monthly.push((doc.data().unpaid[v]))
+        }
+      })
+      setCoachUnpaid(u);
+      setRevenue(r*10);
+      setMembers(names);
+      setCoachMonthlyUnpaid(monthly);
     } catch (err) {
       console.error(err)
       alert('An error occured while fetching user data')
     }
   }
+
   const sendMessage = async (member, message) => {
-    console.log(member)
     const q = query(
       collection(db, 'users'),
       where('name', '==', member),
@@ -147,59 +177,73 @@ export default function Dashboard () {
     })
   }
 
+  const viewedMessage = async () => {
+    await updateDoc(doc(db, 'users', user.uid), {
+      messages: ''
+    })
+  }
+
+  const viewedReminder = async () => {
+    await updateDoc(doc(db, 'users', user.uid), {
+      reminder: false
+    })
+  }
+
+  const moveToPaid = async (session) => {
+    await updateDoc(doc(db, 'users', user.uid), {
+      unpaid: arrayRemove(session),
+      paid: arrayUnion(session)
+    })
+  }
+
+  const sendCoachUnpaid = async (payment) => {
+    await updateDoc(doc(db, 'users', user.uid), {
+      unpaid: arrayUnion(payment)
+    })
+  }
+
+  const resetMonthlyUnpaid = async () => {
+    await updateDoc(doc(db, 'users', user.uid), {
+      unpaid: deleteField(),
+      unpaid: []
+    })
+  }
+
+  const openPayment = async () => {
+    window.open('https://buy.stripe.com/test_3cs3dddBG8za0QU4gh');
+  }
+
+  const addSession = async () => {
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        paid: arrayUnion(startDate)
+      })
+    } catch (err) {
+      alert(err.message)
+    }
+    window.location.reload()
+  }
+
+  const moveToAttended = async (session) => {
+    await updateDoc(doc(db, 'users', user.uid), {
+      paid: arrayRemove(session),
+      attended: arrayUnion(session)
+    })
+  }
+
+  const ToDate = e => {
+    const date = new Date(e.unixTime * 1000)
+    return <>{date.toLocaleDateString()}, </>
+  }
+
   useEffect(() => {
-    if (loading) return
-    if (!user) return navigate('/')
-    fetchUserName()
-    fetchMembers()
-  }, [user, loading, navigate])
+    if (loading) return;
+    if (!user) return navigate('/');
+    fetchUserName();
+    fetchMembers();
+  }, [user, loading, navigate, coachUnpaid])
 
   function MemberDashboard () {
-    const ToDate = e => {
-      const date = new Date(e.unixTime * 1000)
-      return <>{date.toLocaleDateString()}</>
-    }
-
-    const viewedMessage = async () => {
-      await updateDoc(doc(db, 'users', user.uid), {
-        messages: ''
-      })
-    }
-
-    const viewedReminder = async () => {
-      await updateDoc(doc(db, 'users', user.uid), {
-        reminder: false
-      })
-    }
-
-    const moveToPaid = async (session) => {
-      await updateDoc(doc(db, 'users', user.uid), {
-        unpaid: arrayRemove(session),
-        paid: arrayUnion(session)
-      })
-    }
-
-    const openPayment = async () => {
-      window.open('https://buy.stripe.com/test_3cs3dddBG8za0QU4gh');
-    }
-
-    const addSession = async () => {
-      try {
-        await updateDoc(doc(db, 'users', user.uid), {
-          paid: arrayUnion(startDate)
-        })
-      } catch (err) {
-        alert(err.message)
-      }
-      window.location.reload()
-    }
-
-    const moveToAttended = async (session) => {
-      await updateDoc(doc(db, 'users', user.uid), {
-        paid: arrayRemove(session),
-        attended: arrayUnion(session)
-      })
-    }
 
     return (
         <>
@@ -210,8 +254,7 @@ export default function Dashboard () {
                 w={'container.lg'}
                 bg={useColorModeValue('white', 'gray.800')}
                 boxShadow={'xl'}
-                rounded={'md'}
-                overflow={'hidden'}>
+                rounded={'md'}>
                 <Stack
                     textAlign={'left'}
                     p={7}
@@ -221,7 +264,7 @@ export default function Dashboard () {
                     <Text fontSize={'5xl'}>Hello, {" "} </Text>
                     <Text fontSize={'5xl'} fontWeight={700}>
                     
-                    {name}
+                    {name} ({level})
                     </Text>
                     </Stack>
                 </Stack>
@@ -351,9 +394,10 @@ export default function Dashboard () {
     const [sort, setSort] = useState(true)
     const [member, setMember] = useState('')
     const [message, setMessage] = useState('')
+    const [totalProfit, setTotalProfit] = useState(revenue-coachUnpaid);
 
     return (
-      <Center>
+      <Box >
         <VStack spacing={8}>
           <Stack
             textAlign={'left'}
@@ -362,8 +406,7 @@ export default function Dashboard () {
             <Stack direction={'row'} align={'left'} justify={'left'}>
             <Text fontSize={'5xl'}>Hello, {" "} </Text>
             <Text fontSize={'5xl'} fontWeight={700}>
-            
-            {name}
+              {name} ({level})
             </Text>
             </Stack>
           </Stack>
@@ -371,11 +414,12 @@ export default function Dashboard () {
           <Box>
             {sort ? (
               <VStack spacing={4}>
-                <Text fontSize='2xl'>Sorted by Most Paid </Text>
-                <Text fontSize='xl'>Members </Text>
+                <Text fontSize={'xl'} fontWeight="medium">Sorted by Most Paid </Text>
+                <Center>Members</Center>
                 <OrderedList>
                   {members
                     .slice()
+                    .sort((a, b) => (a.revenue > b.revenue) ? 1 : -1)
                     .reverse()
                     .map(member => (
                       <ListItem key={member.name}>{member.name}</ListItem>
@@ -383,11 +427,11 @@ export default function Dashboard () {
                 </OrderedList>
               </VStack>
             ) : (
-              <VStack>
+              <VStack spacing={4}>
                 <Text fontSize={'xl'} fontWeight="medium">Sorted by Least Paid </Text>
                 <Center>Members</Center>
                 <OrderedList>
-                  {members.map(member => (
+                  {members.sort((a, b) => (a.revenue > b.revenue) ? 1 : -1).map(member => (
                     <ListItem key={member.name}>{member.name}</ListItem>
                   ))}
                 </OrderedList>
@@ -428,58 +472,72 @@ export default function Dashboard () {
               <DeleteIcon />
             </Button>
           </HStack>
-          
           <Box>
-            <VStack spacing={5}>
+            <VStack>
             <Text fontSize='2xl'>Club Finances</Text>
-              <Flex w="120%">
-                  <Box>Total Revenue: </Box>
+              <Flex w="140%">
+                  <Box>Revenue: </Box>
                   <Spacer />
-                  <Box>To be done </Box>
+                  <Box>${revenue}</Box>
               </Flex>
-              <Flex w="120%">
-                  <Box>Additional Revenue: </Box>
-                  <Spacer />
-                  <InputGroup width='auto'>
-                    <InputLeftElement
-                      pointerEvents='none'
-                      color='gray.300'
-                      fontSize='1.2em'
-                      children='$'
-                    />
-                    <Input placeholder='Enter amount' htmlSize={9} width='auto'/>
-                    <InputRightElement children={<CheckIcon color='green.500' />} />
-                  </InputGroup>
-              </Flex>
-              <Flex w="120%">
+              <Flex w="140%">
                   <Box>Current debts: </Box>
                   <Spacer />
-                  <Box>To be done </Box>
+                  <Box>${coachUnpaid}</Box>
               </Flex>
-              <Flex w="120%">
-                  <Box>Additional expenses: </Box>
-                  <Spacer />
-                  <InputGroup width='auto'>
-                    <InputLeftElement
-                      pointerEvents='none'
-                      color='gray.300'
-                      fontSize='1em'
-                      children='$'
-                    />
-                  <Input placeholder='Enter amount' htmlSize={9} width='auto'/>
-                  <InputRightElement children={<CheckIcon color='green.500' />} />
-                  </InputGroup>
-              </Flex>
-              <Flex w="120%">
+              <Flex w="140%">
                   <Box>Total Profit: </Box>
                   <Spacer />
-                  <Box>To be done </Box>
+                  <Box>${totalProfit}</Box>
               </Flex>
             </VStack>
           </Box>
+          <Box>
+            <VStack spacing={5}>
+            <Text fontSize='2xl'>Monthly Expenses</Text>
+            <OrderedList>
+              {coachMonthlyUnpaid
+                .slice()
+                .sort((a, b) => (a < b) ? 1 : -1)
+                .map(monthly => (
+                  <ListItem key={monthly}>$ {monthly}</ListItem>
+                ))}
+            </OrderedList>
+            </VStack>
+          </Box>
+          <Box>
+            <Center fontSize='2xl'>Attendance</Center>
+            <Box>
+            <Center>Members</Center>
+              <OrderedList>
+                {members
+                  .slice()
+                  .sort((a, b) => (a.attendance < b.attendance) ? 1 : -1)
+                  .map(member => (
+                    <ListItem key={member.name}>Name: {member.name}, Attendance: {member.attendance}
+                      <Box>
+                        Address: {member.address}, Phone: {member.phone}
+                      </Box>
+                      <Box>
+                        Attended: {member.attended.map(member => (
+                        <ToDate unixTime={member.seconds} />))}
+                      </Box>
+                      <Box>
+                        Paid: {member.paid.map(member => (
+                        <ToDate unixTime={member.seconds} />))}
+                      </Box>
+                      <Box>
+                        Unpaid: {member.unpaid.map(member => (
+                        <ToDate unixTime={member.seconds} />))}
+                      </Box>
+                    </ListItem>
+                  ))}
+              </OrderedList>
+            </Box>
+          </Box>
           <Button onClick={logout}>Logout</Button>
         </VStack>
-      </Center>
+      </Box>
     )
   }
 
@@ -487,6 +545,7 @@ export default function Dashboard () {
     const [sort, setSort] = useState(true)
     const [member, setMember] = useState('')
     const [message, setMessage] = useState('')
+    const [payment, setPayment] = useState('')
 
     return (
       <Center>
@@ -499,7 +558,7 @@ export default function Dashboard () {
             <Text fontSize={'5xl'}>Hello, {" "} </Text>
             <Text fontSize={'5xl'} fontWeight={700}>
             
-            {name}
+            {name} ({level})
             </Text>
             </Stack>
           </Stack>
@@ -543,17 +602,13 @@ export default function Dashboard () {
                 </option>
               ))}
             </Select>
-            <FormControl>
-              <FormLabel>
-                <Input
-                  id='message'
-                  type='text'
-                  value={message}
-                  onChange={e => setMessage(e.target.value)}
-                  placeholder='Message'
-                />
-              </FormLabel>
-            </FormControl>
+              <Input
+                id='message'
+                type='text'
+                value={message}
+                onChange={e => setMessage(e.target.value)}
+                placeholder='Message'
+              />
             <Button onClick={() => sendMessage(member, message)}>
               <ChatIcon />
             </Button>
@@ -566,15 +621,8 @@ export default function Dashboard () {
           </HStack>
           
           <Box>
-            <VStack spacing={5}>
-            <Text fontSize='2xl'>Club Finances</Text>
-              <Flex w="120%">
-                  <Box>Total Revenue: </Box>
-                  <Spacer />
-                  <Box>To be done </Box>
-              </Flex>
-              <Flex w="120%">
-                  <Box>Additional Revenue: </Box>
+            <HStack spacing={3}>
+                  <Box>Unpaid payments: </Box>
                   <Spacer />
                   <InputGroup width='auto'>
                     <InputLeftElement
@@ -583,35 +631,24 @@ export default function Dashboard () {
                       fontSize='1.2em'
                       children='$'
                     />
-                    <Input placeholder='Enter amount' htmlSize={9} width='auto'/>
+                    <Input 
+                      placeholder='Enter amount' 
+                      htmlSize={9} 
+                      width='auto'
+                      type='number'
+                      onChange={e => setPayment(e.target.value)}
+                      value={payment}/>
                     <InputRightElement children={<CheckIcon color='green.500' />} />
                   </InputGroup>
-              </Flex>
-              <Flex w="120%">
-                  <Box>Current debts: </Box>
                   <Spacer />
-                  <Box>To be done </Box>
-              </Flex>
-              <Flex w="120%">
-                  <Box>Additional expenses: </Box>
+                  <Button onClick={() => sendCoachUnpaid(parseInt(payment))}>
+                    <EditIcon />
+                  </Button>
                   <Spacer />
-                  <InputGroup width='auto'>
-                    <InputLeftElement
-                      pointerEvents='none'
-                      color='gray.300'
-                      fontSize='1em'
-                      children='$'
-                    />
-                  <Input placeholder='Enter amount' htmlSize={9} width='auto'/>
-                  <InputRightElement children={<CheckIcon color='green.500' />} />
-                  </InputGroup>
-              </Flex>
-              <Flex w="120%">
-                  <Box>Total Profit: </Box>
-                  <Spacer />
-                  <Box>To be done </Box>
-              </Flex>
-            </VStack>
+                  <Button onClick={resetMonthlyUnpaid}>
+                    <RepeatClockIcon />
+                  </Button>
+            </HStack>
           </Box>
           <Button onClick={logout}>Logout</Button>
         </VStack>

@@ -71,7 +71,8 @@ const registerWithEmailAndPassword = async (name, email, password, phone, addres
         address,
         level,
         unpaid: [],
-        paid: []
+        paid: [],
+        attended: []
         });
         window.location = "/dashboard";
     } catch (err) {
